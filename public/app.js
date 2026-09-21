@@ -116,7 +116,6 @@ function loadWeek() {
       schedule[d.key].shift2 = schedule[d.key].shift2 || [];
     });
     renderScheduleTable();
-    hidePreview();
   });
 }
 
@@ -155,7 +154,7 @@ function renderScheduleTable() {
 
 function renderChips(names) {
   if (!names || names.length === 0) {
-    return `<div class="chip-row"><span class="empty-cell">Kosong — klik untuk isi</span></div>`;
+    return `<div class="chip-row"><span class="empty-cell">Kosong</span></div>`;
   }
   return `<div class="chip-row">${names.map((n) => `<span class="chip">${n}</span>`).join("")}</div>`;
 }
@@ -212,7 +211,7 @@ function listenEmployees() {
     employees = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     employees.sort((a, b) => a.nama.localeCompare(b.nama));
     renderEmployeeList();
-    renderAutoSelect();
+    renderAutoAssignAll();
     renderScheduleTable();
   });
 }
@@ -255,102 +254,126 @@ document.getElementById("addEmployeeForm").addEventListener("submit", async (e) 
   toast(`${nama} ditambahkan`);
 });
 
-// ---------- Auto-assign ----------
-function renderAutoSelect() {
-  const sel = document.getElementById("autoEmployeeSelect");
+// ---------- Auto-assign (live, semua karyawan, setting permanen) ----------
+function renderAutoAssignAll() {
+  const wrap = document.getElementById("employeeAvailability");
   const active = employees.filter((e) => e.aktif !== false);
-  sel.innerHTML = active.map((e) => `<option value="${e.nama}">${e.nama}</option>`).join("");
-}
 
-function renderDayChecks() {
-  const wrap = document.getElementById("unavailableDays");
-  wrap.innerHTML = DAYS.map(
-    (d) => `
-    <label class="day-check">
-      <input type="checkbox" value="${d.key}" />
-      ${d.label.charAt(0) + d.label.slice(1).toLowerCase()}
-    </label>`
-  ).join("");
-}
-renderDayChecks();
+  if (active.length === 0) {
+    wrap.innerHTML = `<p class="empty-cell">Tambahkan karyawan dulu di tab Karyawan.</p>`;
+  } else {
+    wrap.innerHTML = active
+      .map((emp) => {
+        const unavail = emp.unavailable || {};
+        return `
+        <details class="avail-card">
+          <summary>${emp.nama}</summary>
+          <div class="day-checks">
+            ${DAYS.map(
+              (d) => `
+              <div class="day-row">
+                <span class="day-row-label">${capitalize(d.label)}</span>
+                <div class="day-row-shifts">
+                  <label class="shift-check">
+                    <input type="checkbox" data-emp="${emp.id}" data-day="${d.key}" data-shift="shift1" ${
+                unavail[d.key] && unavail[d.key].shift1 ? "checked" : ""
+              } /> Shift 1
+                  </label>
+                  <label class="shift-check">
+                    <input type="checkbox" data-emp="${emp.id}" data-day="${d.key}" data-shift="shift2" ${
+                unavail[d.key] && unavail[d.key].shift2 ? "checked" : ""
+              } /> Shift 2
+                  </label>
+                </div>
+              </div>`
+            ).join("")}
+          </div>
+        </details>`;
+      })
+      .join("");
 
-document.getElementById("previewBtn").addEventListener("click", () => {
-  const nama = document.getElementById("autoEmployeeSelect").value;
-  if (!nama) {
-    toast("Belum ada karyawan aktif untuk dipilih");
-    return;
+    wrap.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      cb.addEventListener("change", async (e) => {
+        const { emp, day, shift } = e.target.dataset;
+        await updateDoc(doc(db, "employees", emp), {
+          [`unavailable.${day}.${shift}`]: e.target.checked,
+        });
+        // Firestore onSnapshot akan trigger renderAutoAssignAll() lagi otomatis
+      });
+    });
   }
-  const uncheckedDays = new Set(
-    [...document.querySelectorAll('#unavailableDays input:checked')].map((c) => c.value)
-  );
 
-  // Build a working copy so we don't mutate live state before "Terapkan"
-  const working = JSON.parse(JSON.stringify(schedule));
-  const placements = []; // {dayKey, shiftKey}
+  renderAutoPreview();
+}
+function capitalize(label) {
+  return label.charAt(0) + label.slice(1).toLowerCase();
+}
 
-  DAYS.forEach((day) => {
-    if (uncheckedDays.has(day.key)) return; // this is a day the employee CANNOT work
-    const cell = working[day.key] || { shift1: [], shift2: [] };
-    if (cell.shift1.includes(nama) || cell.shift2.includes(nama)) return; // already scheduled that day
+function computeAutoSchedule() {
+  const working = emptySchedule();
+  const active = employees.filter((e) => e.aktif !== false);
 
-    // Place into whichever shift currently has fewer people
-    const target = cell.shift1.length <= cell.shift2.length ? "shift1" : "shift2";
-    cell[target] = [...cell[target], nama];
-    working[day.key] = cell;
-    placements.push({ dayKey: day.key, shiftKey: target });
+  active.forEach((emp) => {
+    const unavail = emp.unavailable || {};
+    DAYS.forEach((day) => {
+      const dayUnavail = unavail[day.key] || {};
+      const canShift1 = !dayUnavail.shift1;
+      const canShift2 = !dayUnavail.shift2;
+      if (!canShift1 && !canShift2) return; // gabisa dua shift hari itu
+
+      const cell = working[day.key];
+      if (cell.shift1.includes(emp.nama) || cell.shift2.includes(emp.nama)) return;
+
+      let target;
+      if (canShift1 && canShift2) {
+        target = cell.shift1.length <= cell.shift2.length ? "shift1" : "shift2";
+      } else {
+        target = canShift1 ? "shift1" : "shift2";
+      }
+      cell[target] = [...cell[target], emp.nama];
+    });
   });
 
-  previewResult = { nama, working, placements };
-  renderPreview();
-  document.getElementById("applyBtn").disabled = placements.length === 0;
-  if (placements.length === 0) {
-    toast(`${nama} tidak punya hari kosong untuk diisi minggu ini`);
-  }
-});
+  return working;
+}
 
-function renderPreview() {
-  const wrap = document.getElementById("previewWrap");
+function renderAutoPreview() {
+  previewResult = computeAutoSchedule();
   const tbody = document.getElementById("previewBody");
-  if (!previewResult) {
-    wrap.classList.add("hidden");
-    return;
-  }
-  wrap.classList.remove("hidden");
   tbody.innerHTML = "";
   DAYS.forEach((day) => {
-    const cell = previewResult.working[day.key] || { shift1: [], shift2: [] };
-    const isNew = (shiftKey) =>
-      previewResult.placements.some((p) => p.dayKey === day.key && p.shiftKey === shiftKey);
-
+    const cell = previewResult[day.key] || { shift1: [], shift2: [] };
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><span class="day-cell">${day.label}</span></td>
-      <td>${chipsWithNew(cell.shift1, isNew("shift1") ? previewResult.nama : null)}</td>
-      <td>${chipsWithNew(cell.shift2, isNew("shift2") ? previewResult.nama : null)}</td>
+      <td>${renderChips(cell.shift1)}</td>
+      <td>${renderChips(cell.shift2)}</td>
     `;
     tbody.appendChild(tr);
   });
 }
 
-function chipsWithNew(names, newName) {
-  if (!names || names.length === 0) return `<span class="empty-cell">—</span>`;
-  return `<div class="chip-row">${names
-    .map((n) => `<span class="chip${n === newName ? " new" : ""}">${n}</span>`)
-    .join("")}</div>`;
-}
-
-function hidePreview() {
-  previewResult = null;
-  document.getElementById("previewWrap").classList.add("hidden");
-  document.getElementById("applyBtn").disabled = true;
-}
-
 document.getElementById("applyBtn").addEventListener("click", async () => {
   if (!previewResult) return;
   const ref = doc(db, "schedules", weekId(currentMonday));
-  await setDoc(ref, previewResult.working, { merge: true });
-  toast(`Jadwal ${previewResult.nama} diterapkan`);
-  hidePreview();
+  await setDoc(ref, previewResult, { merge: true });
+  toast(`Jadwal otomatis diterapkan ke minggu ${formatWeekLabel(currentMonday)}`);
+});
+
+// ---------- Copy last week's schedule ----------
+document.getElementById("copyLastWeekBtn").addEventListener("click", async () => {
+  const prevMonday = addDays(currentMonday, -7);
+  const prevRef = doc(db, "schedules", weekId(prevMonday));
+  const prevSnap = await getDoc(prevRef);
+  if (!prevSnap.exists()) {
+    toast("Jadwal minggu lalu belum ada");
+    return;
+  }
+  const ok = confirm("Salin jadwal minggu lalu ke minggu ini? Jadwal yang sudah ada di minggu ini akan ditimpa.");
+  if (!ok) return;
+  const ref = doc(db, "schedules", weekId(currentMonday));
+  await setDoc(ref, prevSnap.data());
+  toast("Jadwal minggu lalu berhasil disalin");
 });
 
 // ---------- PDF export ----------

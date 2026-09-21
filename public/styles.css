@@ -195,6 +195,7 @@ body {
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 .panel-head h2 {
   font-family: var(--font-display);
@@ -202,6 +203,11 @@ body {
   font-weight: 600;
   color: var(--green-900);
   margin: 0;
+}
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .hint {
@@ -246,28 +252,36 @@ body {
 }
 .schedule-table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
-  border-spacing: 0 8px;
-  min-width: 480px;
+  border-spacing: 0 6px;
+}
+.schedule-table th:first-child,
+.schedule-table td:first-child {
+  width: 30%;
+}
+.schedule-table th:not(:first-child),
+.schedule-table td:not(:first-child) {
+  width: 35%;
 }
 .schedule-table thead th {
   text-align: left;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 600;
   color: var(--green-700);
-  padding: 0 12px 4px;
+  padding: 0 6px 4px;
 }
 .th-sub {
   font-weight: 400;
   color: rgba(18, 81, 61, 0.65);
-  font-size: 0.68rem;
+  font-size: 0.6rem;
 }
 .schedule-table tbody tr {
   background: var(--glass-bg-strong);
 }
 .schedule-table tbody td,
 .schedule-table tbody th {
-  padding: 12px;
+  padding: 8px 6px;
   vertical-align: top;
 }
 .schedule-table tbody tr td:first-child,
@@ -280,36 +294,34 @@ body {
 .day-cell {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.76rem;
   color: var(--green-900);
-  white-space: nowrap;
 }
 .day-date {
   display: block;
   font-family: var(--font-body);
   font-weight: 400;
-  font-size: 0.7rem;
+  font-size: 0.62rem;
   color: rgba(12, 38, 28, 0.55);
   margin-top: 2px;
 }
 
 .shift-cell {
   cursor: pointer;
-  min-width: 140px;
 }
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  min-height: 26px;
+  gap: 4px;
+  min-height: 22px;
 }
 .chip {
   background: rgba(31, 122, 83, 0.14);
   color: var(--green-900);
   border: 1px solid rgba(31, 122, 83, 0.28);
   border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 0.76rem;
+  padding: 3px 8px;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 .chip.new {
@@ -317,7 +329,7 @@ body {
   color: var(--white);
 }
 .empty-cell {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: rgba(12, 38, 28, 0.35);
 }
 
@@ -403,23 +415,41 @@ body {
   color: var(--ink);
 }
 .day-checks {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 4px;
 }
-.day-check {
+.day-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   background: rgba(255, 255, 255, 0.5);
   border: 1px solid rgba(11, 61, 46, 0.14);
   border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: 0.8rem;
-  color: var(--green-900);
+  padding: 9px 12px;
+  flex-wrap: wrap;
 }
-.day-check input {
+.day-row-label {
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: var(--green-900);
+  min-width: 64px;
+}
+.day-row-shifts {
+  display: flex;
+  gap: 14px;
+}
+.shift-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--green-700);
+  white-space: nowrap;
+}
+.shift-check input {
   accent-color: var(--green-900);
 }
 
@@ -427,6 +457,39 @@ body {
   display: flex;
   gap: 10px;
   margin-top: 16px;
+}
+
+.avail-card {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(11, 61, 46, 0.14);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.avail-card summary {
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--green-900);
+  font-size: 0.9rem;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.avail-card summary::-webkit-details-marker {
+  display: none;
+}
+.avail-card summary::after {
+  content: "▾";
+  color: var(--green-700);
+  font-size: 0.8rem;
+}
+.avail-card[open] summary::after {
+  content: "▴";
+}
+.avail-card .day-checks {
+  margin-top: 12px;
 }
 
 .preview-wrap {

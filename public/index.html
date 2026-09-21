@@ -51,7 +51,10 @@
       <div class="glass panel">
         <div class="panel-head">
           <h2>Jadwal minggu ini</h2>
-          <button id="exportPdfBtn" class="btn btn-ghost">Export PDF</button>
+          <div class="panel-actions">
+            <button id="copyLastWeekBtn" class="btn btn-ghost">Salin minggu lalu</button>
+            <button id="exportPdfBtn" class="btn btn-ghost">Export PDF</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table id="scheduleTable" class="schedule-table">
@@ -86,25 +89,14 @@
     <section id="tab-auto" class="tab-panel">
       <div class="glass panel">
         <div class="panel-head">
-          <h2>Auto-assign berdasarkan ketidaktersediaan</h2>
+          <h2>Ketersediaan karyawan</h2>
         </div>
-        <p class="hint">Pilih karyawan, lalu centang hari dia <strong>gabisa</strong>. Sisanya otomatis diisi ke shift yang paling kosong di hari itu.</p>
+        <p class="hint">Atur hari & shift yang <strong>gabisa</strong> per karyawan — kesimpanan permanen. Karyawan tanpa setting dianggap bisa kerja kapan saja. Jadwal di bawah otomatis ke-generate ulang tiap ada perubahan.</p>
 
-        <div class="auto-form">
-          <label class="field-label" for="autoEmployeeSelect">Karyawan</label>
-          <select id="autoEmployeeSelect" class="select"></select>
+        <div id="employeeAvailability"></div>
 
-          <label class="field-label">Hari yang gabisa</label>
-          <div id="unavailableDays" class="day-checks"></div>
-
-          <div class="auto-actions">
-            <button id="previewBtn" class="btn btn-solid" type="button">Lihat preview</button>
-            <button id="applyBtn" class="btn btn-ghost" type="button" disabled>Terapkan ke jadwal</button>
-          </div>
-        </div>
-
-        <div id="previewWrap" class="preview-wrap hidden">
-          <h3>Preview penempatan</h3>
+        <div class="preview-wrap" id="previewWrap">
+          <h3>Preview jadwal otomatis</h3>
           <div class="table-wrap">
             <table class="schedule-table preview-table">
               <thead>
@@ -116,6 +108,9 @@
               </thead>
               <tbody id="previewBody"></tbody>
             </table>
+          </div>
+          <div class="auto-actions">
+            <button id="applyBtn" class="btn btn-solid" type="button">Terapkan ke jadwal minggu ini</button>
           </div>
         </div>
       </div>
