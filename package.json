@@ -1,0 +1,15 @@
+{
+  "name": "esc-jadwal",
+  "version": "1.0.0",
+  "description": "Jadwal Shift ESC — PWA jadwal karyawan dengan Firebase Firestore",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

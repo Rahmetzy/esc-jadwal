@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+<title>Jadwal Shift ESC</title>
+
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#0B3D2E" />
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Jadwal ESC" />
+<link rel="icon" href="/icons/icon-192.png" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+<div class="glow glow-a"></div>
+<div class="glow glow-b"></div>
+
+<div class="app">
+
+  <header class="topbar glass">
+    <div class="brand">
+      <span class="brand-mark">ESC</span>
+      <span class="brand-name">Jadwal Shift</span>
+    </div>
+    <div class="week-nav">
+      <button id="prevWeek" class="icon-btn" aria-label="Minggu sebelumnya">‹</button>
+      <span id="weekLabel" class="week-label">—</span>
+      <button id="nextWeek" class="icon-btn" aria-label="Minggu berikutnya">›</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="jadwal">Jadwal</button>
+    <button class="tab" data-tab="karyawan">Karyawan</button>
+    <button class="tab" data-tab="auto">Auto-Assign</button>
+  </nav>
+
+  <main>
+    <!-- JADWAL -->
+    <section id="tab-jadwal" class="tab-panel active">
+      <div class="glass panel">
+        <div class="panel-head">
+          <h2>Jadwal minggu ini</h2>
+          <button id="exportPdfBtn" class="btn btn-ghost">Export PDF</button>
+        </div>
+        <div class="table-wrap">
+          <table id="scheduleTable" class="schedule-table">
+            <thead>
+              <tr>
+                <th>Hari</th>
+                <th>Shift 1<br /><span class="th-sub">07.00–15.00</span></th>
+                <th>Shift 2<br /><span class="th-sub">14.00–22.00</span></th>
+              </tr>
+            </thead>
+            <tbody id="scheduleBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- KARYAWAN -->
+    <section id="tab-karyawan" class="tab-panel">
+      <div class="glass panel">
+        <div class="panel-head">
+          <h2>Kelola karyawan</h2>
+        </div>
+        <form id="addEmployeeForm" class="inline-form">
+          <input id="newEmployeeName" type="text" placeholder="Nama karyawan baru" required />
+          <button type="submit" class="btn btn-solid">Tambah</button>
+        </form>
+        <ul id="employeeList" class="employee-list"></ul>
+      </div>
+    </section>
+
+    <!-- AUTO-ASSIGN -->
+    <section id="tab-auto" class="tab-panel">
+      <div class="glass panel">
+        <div class="panel-head">
+          <h2>Auto-assign berdasarkan ketidaktersediaan</h2>
+        </div>
+        <p class="hint">Pilih karyawan, lalu centang hari dia <strong>gabisa</strong>. Sisanya otomatis diisi ke shift yang paling kosong di hari itu.</p>
+
+        <div class="auto-form">
+          <label class="field-label" for="autoEmployeeSelect">Karyawan</label>
+          <select id="autoEmployeeSelect" class="select"></select>
+
+          <label class="field-label">Hari yang gabisa</label>
+          <div id="unavailableDays" class="day-checks"></div>
+
+          <div class="auto-actions">
+            <button id="previewBtn" class="btn btn-solid" type="button">Lihat preview</button>
+            <button id="applyBtn" class="btn btn-ghost" type="button" disabled>Terapkan ke jadwal</button>
+          </div>
+        </div>
+
+        <div id="previewWrap" class="preview-wrap hidden">
+          <h3>Preview penempatan</h3>
+          <div class="table-wrap">
+            <table class="schedule-table preview-table">
+              <thead>
+                <tr>
+                  <th>Hari</th>
+                  <th>Shift 1</th>
+                  <th>Shift 2</th>
+                </tr>
+              </thead>
+              <tbody id="previewBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script type="module" src="/app.js"></script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
