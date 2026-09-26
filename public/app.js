@@ -150,6 +150,8 @@ function renderScheduleTable() {
 
     tbody.appendChild(tr);
   });
+
+  renderShiftSummary();
 }
 
 function renderChips(names) {
@@ -157,6 +159,34 @@ function renderChips(names) {
     return `<div class="chip-row"><span class="empty-cell">Kosong</span></div>`;
   }
   return `<div class="chip-row">${names.map((n) => `<span class="chip">${n}</span>`).join("")}</div>`;
+}
+
+// ---------- Ringkasan total shift per karyawan (nggak ikut export PDF) ----------
+function renderShiftSummary() {
+  const counts = {};
+  DAYS.forEach((day) => {
+    const cell = schedule[day.key] || { shift1: [], shift2: [] };
+    [...cell.shift1, ...cell.shift2].forEach((name) => {
+      counts[name] = (counts[name] || 0) + 1;
+    });
+  });
+
+  const ul = document.getElementById("shiftSummary");
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+  if (entries.length === 0) {
+    ul.innerHTML = `<li class="empty-cell">Belum ada jadwal minggu ini</li>`;
+    return;
+  }
+  ul.innerHTML = entries
+    .map(
+      ([name, count]) => `
+      <li class="summary-row">
+        <span>${name}</span>
+        <span class="summary-count">${count} shift</span>
+      </li>`
+    )
+    .join("");
 }
 
 // ---------- Cell editor popover ----------
@@ -319,16 +349,23 @@ function computeAutoSchedule() {
   const working = emptySchedule();
   const active = employees.filter((e) => e.aktif !== false);
 
+  // Kapasitas maksimal per shift: normalnya 1 orang, kecuali Shift 2 Sabtu (malam Minggu)
+  // dan Shift 2 Minggu (malam Senin) yang boleh sampai 2 orang.
+  const capacity = (dayKey, shiftKey) => {
+    if (shiftKey === "shift2" && (dayKey === "sabtu" || dayKey === "minggu")) return 2;
+    return 1;
+  };
+
   active.forEach((emp) => {
     const unavail = emp.unavailable || {};
     DAYS.forEach((day) => {
       const dayUnavail = unavail[day.key] || {};
-      const canShift1 = !dayUnavail.shift1;
-      const canShift2 = !dayUnavail.shift2;
-      if (!canShift1 && !canShift2) return; // gabisa dua shift hari itu
-
       const cell = working[day.key];
       if (cell.shift1.includes(emp.nama) || cell.shift2.includes(emp.nama)) return;
+
+      const canShift1 = !dayUnavail.shift1 && cell.shift1.length < capacity(day.key, "shift1");
+      const canShift2 = !dayUnavail.shift2 && cell.shift2.length < capacity(day.key, "shift2");
+      if (!canShift1 && !canShift2) return; // gabisa atau shift-nya udah penuh
 
       let target;
       if (canShift1 && canShift2) {
