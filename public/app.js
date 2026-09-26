@@ -259,14 +259,20 @@ function renderAutoAssignAll() {
   const wrap = document.getElementById("employeeAvailability");
   const active = employees.filter((e) => e.aktif !== false);
 
+  // Simpan dulu kartu siapa aja yang lagi kebuka, biar nggak balik tertutup tiap re-render
+  const openIds = new Set(
+    [...wrap.querySelectorAll("details.avail-card[open]")].map((d) => d.dataset.empId)
+  );
+
   if (active.length === 0) {
     wrap.innerHTML = `<p class="empty-cell">Tambahkan karyawan dulu di tab Karyawan.</p>`;
   } else {
     wrap.innerHTML = active
       .map((emp) => {
         const unavail = emp.unavailable || {};
+        const isOpen = openIds.has(emp.id);
         return `
-        <details class="avail-card">
+        <details class="avail-card" data-emp-id="${emp.id}" ${isOpen ? "open" : ""}>
           <summary>${emp.nama}</summary>
           <div class="day-checks">
             ${DAYS.map(
