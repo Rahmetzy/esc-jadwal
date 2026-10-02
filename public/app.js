@@ -150,8 +150,6 @@ function renderScheduleTable() {
 
     tbody.appendChild(tr);
   });
-
-  renderShiftSummary();
 }
 
 function renderChips(names) {
@@ -159,34 +157,6 @@ function renderChips(names) {
     return `<div class="chip-row"><span class="empty-cell">Kosong</span></div>`;
   }
   return `<div class="chip-row">${names.map((n) => `<span class="chip">${n}</span>`).join("")}</div>`;
-}
-
-// ---------- Ringkasan total shift per karyawan (nggak ikut export PDF) ----------
-function renderShiftSummary() {
-  const counts = {};
-  DAYS.forEach((day) => {
-    const cell = schedule[day.key] || { shift1: [], shift2: [] };
-    [...cell.shift1, ...cell.shift2].forEach((name) => {
-      counts[name] = (counts[name] || 0) + 1;
-    });
-  });
-
-  const ul = document.getElementById("shiftSummary");
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-
-  if (entries.length === 0) {
-    ul.innerHTML = `<li class="empty-cell">Belum ada jadwal minggu ini</li>`;
-    return;
-  }
-  ul.innerHTML = entries
-    .map(
-      ([name, count]) => `
-      <li class="summary-row">
-        <span>${name}</span>
-        <span class="summary-count">${count} shift</span>
-      </li>`
-    )
-    .join("");
 }
 
 // ---------- Cell editor popover ----------
@@ -348,42 +318,25 @@ function capitalize(label) {
 function computeAutoSchedule() {
   const working = emptySchedule();
   const active = employees.filter((e) => e.aktif !== false);
-  if (active.length === 0) return working;
 
-  // Kapasitas maksimal per shift: normalnya 1 orang, kecuali Shift 2 Sabtu (malam Minggu)
-  // dan Shift 2 Minggu (malam Senin) yang boleh sampai 2 orang.
-  const capacity = (dayKey, shiftKey) => {
-    if (shiftKey === "shift2" && (dayKey === "sabtu" || dayKey === "minggu")) return 2;
-    return 1;
-  };
+  active.forEach((emp) => {
+    const unavail = emp.unavailable || {};
+    DAYS.forEach((day) => {
+      const dayUnavail = unavail[day.key] || {};
+      const canShift1 = !dayUnavail.shift1;
+      const canShift2 = !dayUnavail.shift2;
+      if (!canShift1 && !canShift2) return; // gabisa dua shift hari itu
 
-  // Hitung berapa shift yang udah didapat tiap karyawan sepanjang minggu ini,
-  // dipakai buat nentuin siapa yang paling "berhak" diisi duluan di tiap slot kosong.
-  const shiftCount = {};
-  active.forEach((emp) => (shiftCount[emp.nama] = 0));
+      const cell = working[day.key];
+      if (cell.shift1.includes(emp.nama) || cell.shift2.includes(emp.nama)) return;
 
-  // Proses SLOT per SLOT (bukan karyawan per karyawan), biar nggak ada yang
-  // "keburu ambil semua" sebelum karyawan lain kebagian giliran.
-  DAYS.forEach((day) => {
-    const cell = working[day.key];
-    ["shift1", "shift2"].forEach((shiftKey) => {
-      const cap = capacity(day.key, shiftKey);
-      for (let i = 0; i < cap; i++) {
-        const eligible = active.filter((emp) => {
-          const unavail = emp.unavailable || {};
-          const dayUnavail = unavail[day.key] || {};
-          if (dayUnavail[shiftKey]) return false; // dia emang gabisa slot ini
-          if (cell.shift1.includes(emp.nama) || cell.shift2.includes(emp.nama)) return false; // udah kerja hari itu
-          return true;
-        });
-        if (eligible.length === 0) continue; // nggak ada yang bisa isi slot ini
-
-        // Pilih yang paling sedikit jumlah shift-nya sejauh ini; kalau seri, urutan nama yang menang
-        eligible.sort((a, b) => shiftCount[a.nama] - shiftCount[b.nama] || a.nama.localeCompare(b.nama));
-        const chosen = eligible[0];
-        cell[shiftKey] = [...cell[shiftKey], chosen.nama];
-        shiftCount[chosen.nama] += 1;
+      let target;
+      if (canShift1 && canShift2) {
+        target = cell.shift1.length <= cell.shift2.length ? "shift1" : "shift2";
+      } else {
+        target = canShift1 ? "shift1" : "shift2";
       }
+      cell[target] = [...cell[target], emp.nama];
     });
   });
 
