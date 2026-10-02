@@ -28,9 +28,12 @@
 <div class="app">
 
   <header class="topbar glass">
-    <div class="brand">
-      <span class="brand-mark">ESC</span>
-      <span class="brand-name">Jadwal Shift</span>
+    <div class="topbar-title">
+      <div class="brand">
+        <span class="brand-mark">ESC</span>
+        <span class="brand-name">Jadwal Shift</span>
+      </div>
+      <span class="version-tag">v1.3</span>
     </div>
     <div class="week-nav">
       <button id="prevWeek" class="icon-btn" aria-label="Minggu sebelumnya">‹</button>
@@ -43,6 +46,7 @@
     <button class="tab active" data-tab="jadwal">Jadwal</button>
     <button class="tab" data-tab="karyawan">Karyawan</button>
     <button class="tab" data-tab="auto">Auto-Assign</button>
+    <button class="tab" data-tab="rekap">Rekap</button>
   </nav>
 
   <main>
@@ -68,6 +72,13 @@
             <tbody id="scheduleBody"></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="glass panel">
+        <div class="panel-head">
+          <h2>Total shift minggu ini</h2>
+        </div>
+        <ul id="shiftSummary" class="summary-list"></ul>
       </div>
     </section>
 
@@ -113,6 +124,29 @@
             <button id="applyBtn" class="btn btn-solid" type="button">Terapkan ke jadwal minggu ini</button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- REKAP BONUS BULANAN -->
+    <section id="tab-rekap" class="tab-panel">
+      <div class="glass panel">
+        <div class="panel-head">
+          <h2>Rekap bonus bulanan</h2>
+        </div>
+        <p class="hint">Total shift tiap karyawan dalam 1 bulan × jumlah pasang sepatu wajib dicuci per shift.</p>
+
+        <div class="week-nav" style="justify-content: center; margin-bottom: 14px;">
+          <button id="prevMonth" class="icon-btn" aria-label="Bulan sebelumnya">‹</button>
+          <span id="monthLabel" class="week-label">—</span>
+          <button id="nextMonth" class="icon-btn" aria-label="Bulan berikutnya">›</button>
+        </div>
+
+        <label class="field-label" for="shoeQuota">Jumlah pasang sepatu wajib per shift</label>
+        <input id="shoeQuota" type="number" class="select" value="7" style="width: 100%; margin-top: 4px;" />
+
+        <ul id="recapList" class="summary-list" style="margin-top: 18px;"></ul>
+
+        <div id="recapTotal" class="summary-row" style="margin-top: 10px; background: rgba(11,61,46,0.9); color: #fff;"></div>
       </div>
     </section>
   </main>
